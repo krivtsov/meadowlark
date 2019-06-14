@@ -3,7 +3,16 @@ const express = require('express');
 
 const app = express();
 
-const handlebars = require('express-handlebars').create({ defaultLayout: 'main' });
+const handlebars = require('express-handlebars').create({
+  defaultLayout: 'main',
+  helpers: {
+    section: (name, options) => {
+      if (!this.sections) this.sections = {};
+      this.sections[name] = options.fn(this);
+      return null;
+    },
+  },
+});
 
 const fortune = require('./lib/fortune');
 
@@ -28,6 +37,18 @@ app.get('/about', (req, res) => {
     fortune: fortune.getFortune(),
     pageTestScript: '/qa/tests-about.js',
   });
+});
+
+app.get('/tours/hood-river', (req, res) => {
+  res.render('tours/hood-river');
+});
+
+app.get('/tours/request-group-rate', (req, res) => {
+  res.render('tours/request-group-rate');
+});
+
+app.get('/tours/oregon-coast', (req, res) => {
+  res.render('tours/oregon-coast');
 });
 
 app.use((req, res) => {
