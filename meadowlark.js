@@ -6,6 +6,7 @@ const app = express();
 
 const handlebars = require('express-handlebars').create({
   defaultLayout: 'main',
+  extname: 'hbs',
   helpers: {
     section: (name, options) => {
       if (!this.sections) this.sections = {};
@@ -17,8 +18,8 @@ const handlebars = require('express-handlebars').create({
 
 const fortune = require('./lib/fortune');
 
-app.engine('handlebars', handlebars.engine);
-app.set('view engine', 'handlebars');
+app.engine('hbs', handlebars.engine);
+app.set('view engine', 'hbs');
 
 app.set('port', process.env.PORT || 3000);
 
