@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 /* eslint-disable no-console */
 /* jshint esversion: 6 */
 const express = require('express');
@@ -9,11 +10,37 @@ const handlebars = require('express-handlebars').create({
   extname: 'hbs',
   helpers: {
     section: (name, options) => {
-      if (!this.sections) this.sections = {};
-      this.sections[name] = options.fn(this);
+      if (!this._sections) this._sections = {};
+      this._sections[name] = options.fn(this);
       return null;
     },
   },
+});
+
+const getWeatherData = () => ({
+  locations: [
+    {
+      name: 'Portland',
+      forecastUrl: 'http://www.wunderground.com/US/OR/Portland.html',
+      iconUrl: 'http://icons-ak.wxug.com/i/c/k/cloudy.gif',
+      weather: 'Overcast',
+      temp: '54.1 F (12.3 C)',
+    },
+    {
+      name: 'Bend',
+      forecastUrl: 'http://www.wunderground.com/US/OR/Bend.html',
+      iconUrl: 'http://icons-ak.wxug.com/i/c/k/partlycloudy.gif',
+      weather: 'Partly Cloudy',
+      temp: '55.0 F (12.8 C)',
+    },
+    {
+      name: 'Manzanita',
+      forecastUrl: 'http://www.wunderground.com/US/OR/Manzanita.html',
+      iconUrl: 'http://icons-ak.wxug.com/i/c/k/rain.gif',
+      weather: 'Light Rain',
+      temp: '55.0 F (12.8 C)',
+    },
+  ],
 });
 
 const fortune = require('./lib/fortune');
@@ -27,6 +54,12 @@ app.use(express.static(`${__dirname}/public`));
 
 app.use((req, res, next) => {
   res.locals.showTests = app.get('env') !== 'production' && req.query.test === '1';
+  next();
+});
+
+app.use((req, res, next) => {
+  if (!res.locals.partials) res.locals.partials = {};
+  res.locals.partials.weatherContext = getWeatherData();
   next();
 });
 
@@ -51,6 +84,19 @@ app.get('/tours/request-group-rate', (req, res) => {
 
 app.get('/tours/oregon-coast', (req, res) => {
   res.render('tours/oregon-coast');
+});
+
+app.get('/nursery-rhyme', (req, res) => {
+  res.render('nursery-rhyme');
+});
+
+app.get('/data/nursery-rhyme', (req, res) => {
+  res.json({
+    animal: 'бельчонок',
+    bodyPart: 'хвост',
+    adjective: 'пушистый',
+    noun: 'гигант',
+  });
 });
 
 app.use((req, res) => {
