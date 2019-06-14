@@ -17,6 +17,10 @@
     "eslint": "^5.16.0",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.17.3",
+    "grunt": "^1.0.4",
+    "grunt-contrib-jshint": "^2.1.0",
+    "grunt-exec": "^3.0.0",
+    "grunt-mocha": "^1.2.0",
     "mocha": "^6.1.4",
     "zombie": "^6.1.4"
   }
