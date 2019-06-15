@@ -132,7 +132,7 @@ app.post('/contest/vacation-photo/:year/:month', (req, res) => {
   const form = new formidable.IncomingForm();
   form.parse(req, (err, fields, files) => {
     if (err) {
-      return res.redirect(303, '/error');
+      res.redirect(303, '/error');
     }
     console.log('recieved fields');
     console.log(fields);
