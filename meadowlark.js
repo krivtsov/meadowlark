@@ -2,6 +2,7 @@
 /* eslint-disable no-console */
 /* jshint esversion: 6 */
 const express = require('express');
+const formidable = require('formidable');
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.set('view engine', 'hbs');
 app.set('port', process.env.PORT || 3000);
 
 app.use(express.static(`${__dirname}/public`));
+app.use(require('body-parser').urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
   res.locals.showTests = app.get('env') !== 'production' && req.query.test === '1';
@@ -96,6 +98,47 @@ app.get('/data/nursery-rhyme', (req, res) => {
     bodyPart: 'хвост',
     adjective: 'пушистый',
     noun: 'гигант',
+  });
+});
+
+app.get('/newsletter', (req, res) => {
+  res.render('newsletter', { csrf: 'CSRF token goes here' });
+});
+
+// app.post('/process', (req, res) => {
+//   console.log(`Form (from querysrting): ${req.query.form}`);
+//   console.log(`CSRF token (from hidden form field): ${req.body._csrf}`);
+//   console.log(`Name (from visible form field): ${req.body.name}`);
+//   console.log(`Email (from visible form field): ${req.body.email}`);
+//   res.redirect(303, '/thank-you');
+// });
+
+app.post('/process', (req, res) => {
+  if (req.xhr || req.accepts('json,html') === 'json') {
+    // if there were an error, we would send { error: 'error description' }
+    res.send({ success: true });
+  } else {
+  // if there were an error, we would redirect to an error page
+    res.redirect(303, '/thank-you');
+  }
+});
+
+app.get('/contest/vacation-photo', (req, res) => {
+  const now = new Date();
+  res.render('contest/vacation-photo', { year: now.getFullYear(), month: now.getMonth() });
+});
+
+app.post('/contest/vacation-photo/:year/:month', (req, res) => {
+  const form = new formidable.IncomingForm();
+  form.parse(req, (err, fields, files) => {
+    if (err) {
+      return res.redirect(303, '/error');
+    }
+    console.log('recieved fields');
+    console.log(fields);
+    console.log('recieved files: ');
+    console.log(files);
+    res.redirect(303, '/thank-you');
   });
 });
 
