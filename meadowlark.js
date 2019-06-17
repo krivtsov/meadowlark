@@ -1,4 +1,3 @@
-/* eslint-disable no-shadow */
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable no-console */
@@ -37,14 +36,14 @@ app.use((req, res, next) => {
       startServer.close();
       try {
         next(err);
-      } catch (err) {
-        console.error('Express Error,\n', err.stack);
+      } catch (e) {
+        console.error('Express Error,\n', e.stack);
         res.statusCode = 500;
         res.setHeader('content-type', 'text/plain');
         res.end('Error Server');
       }
-    } catch (err) {
-      console.error('Dont send response 500,\n', err.stack);
+    } catch (e) {
+      console.error('Dont send response 500,\n', e.stack);
     }
   });
 

@@ -4,7 +4,7 @@
   "description": "",
   "main": "meadowlark.js",
   "scripts": {
-    "start" : "node meadowlark_cluster",
+    "start": "node meadowlark_cluster",
     "test": "mocha -u tdd qa/*",
     "lint": "eslint"
   },
@@ -30,6 +30,7 @@
     "grunt-contrib-jshint": "^2.1.0",
     "grunt-exec": "^3.0.0",
     "grunt-mocha": "^1.2.0",
+    "grunt-mocha-test": "^0.13.3",
     "mocha": "^6.1.4",
     "zombie": "^6.1.4"
   }

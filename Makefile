@@ -3,6 +3,9 @@ test:
 
 start:
 		npm start
-lint:
-		npm run lint qa 
 
+lint:
+		npm run lint qa
+
+grunt:
+		grunt --force
