@@ -17,8 +17,11 @@ module.exports = (grunt) => {
       },
     },
     jshint: {
-      app: ['meadowlark.js', 'public/js/**/*.js', 'lib/**/*js'],
+      app: ['meadowlark*.js', 'public/js/**/*.js', 'lib/**/*js'],
       qa: ['Gruntfile.js', 'public/qa/**/*.js', 'qa/**/*.js'],
+      options: {
+        jshintrs: 'jshintrc',
+      },
     },
     exec: {
       linkchecker: { cmd: 'linkchecker http://localhost:3000' },

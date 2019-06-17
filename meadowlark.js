@@ -1,3 +1,5 @@
+/* eslint-disable no-shadow */
+/* eslint-disable no-use-before-define */
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable no-console */
 /* jshint esversion: 6 */
@@ -5,6 +7,8 @@ const express = require('express');
 const formidable = require('formidable');
 const expressLogger = require('express-logger');
 const morgan = require('morgan');
+const cluster = require('cluster');
+const domain = require('domain').create();
 
 const app = express();
 
@@ -18,6 +22,35 @@ const handlebars = require('express-handlebars').create({
       return null;
     },
   },
+});
+
+app.use((req, res, next) => {
+  domain.on('error', (err) => {
+    console.error('Error Domain\n', err.stack);
+    try {
+      setTimeout(() => {
+        console.error('Stop 5 sec');
+        process.exit(1);
+      }, 5000);
+      const { worker } = cluster.worker;
+      if (worker) worker.disconnect();
+      startServer.close();
+      try {
+        next(err);
+      } catch (err) {
+        console.error('Express Error,\n', err.stack);
+        res.statusCode = 500;
+        res.setHeader('content-type', 'text/plain');
+        res.end('Error Server');
+      }
+    } catch (err) {
+      console.error('Dont send response 500,\n', err.stack);
+    }
+  });
+
+  domain.add(req);
+  domain.add(res);
+  domain.run(next);
 });
 
 const credentials = require('./credentials');
@@ -94,6 +127,11 @@ switch (app.get('env')) {
     break;
 }
 
+app.use((req, res, next) => {
+  if (cluster.isWorker) console.log('request %d', cluster.worker.id);
+  next();
+});
+
 app.get('/', (req, res) => {
   res.cookie('monster', 'nom nom');
   res.cookie('signed_monster', 'Nom Nom', { signed: true });
@@ -139,6 +177,16 @@ app.get('/jquerytest', (req, res) => {
 app.get('/newsletter', (req, res) => {
   res.render('newsletter', { csrf: 'CSRF token goes here' });
 });
+
+// app.get('/fail', (req, res) => {
+//   throw new Error('No');
+// });
+
+// app.get('/epic-fail', (req, res) => {
+//   process.nextTick(() => {
+//     throw new Error('Boom');
+//   });
+// });
 
 // const NewsletterSignup = () => { };
 
@@ -226,9 +274,17 @@ app.use((req, res) => {
 app.use((err, req, res) => {
   console.error(err.stack);
   res.status(500);
-  res.render('home');
+  res.render('500');
 });
 
-app.listen(app.get('port'), () => {
-  console.log(`Express starting on  ${app.get('env')} http://localhost:${app.get('port')} press ctrl + C for Exit`);
-});
+const startServer = () => {
+  app.listen(app.get('port'), () => {
+    console.log(`Express starting on  ${app.get('env')} http://localhost:${app.get('port')} press ctrl + C for Exit`);
+  });
+};
+
+if (require.main === module) {
+  startServer();
+} else {
+  module.exports = startServer;
+}
