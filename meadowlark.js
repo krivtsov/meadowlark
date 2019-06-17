@@ -3,6 +3,8 @@
 /* jshint esversion: 6 */
 const express = require('express');
 const formidable = require('formidable');
+const expressLogger = require('express-logger');
+const morgan = require('morgan');
 
 const app = express();
 
@@ -83,6 +85,15 @@ app.use((req, res, next) => {
   next();
 });
 
+switch (app.get('env')) {
+  case 'production':
+    app.use(expressLogger({ path: `${__dirname}/log/requets.log` }));
+    break;
+  default:
+    app.use(morgan('dev'));
+    break;
+}
+
 app.get('/', (req, res) => {
   res.cookie('monster', 'nom nom');
   res.cookie('signed_monster', 'Nom Nom', { signed: true });
@@ -132,8 +143,6 @@ app.get('/newsletter', (req, res) => {
 // const NewsletterSignup = () => { };
 
 // //NewsletterSignup.prototype.save = cb => cb();
-
-// const VALID_EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 
 // app.post('/newsletter', (req, res) => {
 //   const name = req.body.name || '';
