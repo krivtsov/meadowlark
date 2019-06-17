@@ -18,6 +18,15 @@ const handlebars = require('express-handlebars').create({
   },
 });
 
+const credentials = require('./credentials');
+
+app.use(require('cookie-parser')(credentials.cookieSecret));
+app.use(require('express-session')({
+  resave: false,
+  saveUninitialized: false,
+  secret: credentials.cookieSecret,
+}));
+
 const getWeatherData = () => ({
   locations: [
     {
@@ -65,7 +74,18 @@ app.use((req, res, next) => {
   next();
 });
 
+
+app.use((req, res, next) => {
+  // if there's a flash message, transfer
+  // it to the context, then clear it
+  res.locals.flash = req.session.flash;
+  delete req.session.flash;
+  next();
+});
+
 app.get('/', (req, res) => {
+  res.cookie('monster', 'nom nom');
+  res.cookie('signed_monster', 'Nom Nom', { signed: true });
   res.render('home');
 });
 
@@ -101,9 +121,56 @@ app.get('/data/nursery-rhyme', (req, res) => {
   });
 });
 
+app.get('/jquerytest', (req, res) => {
+  res.render('jquerytest');
+});
+
 app.get('/newsletter', (req, res) => {
   res.render('newsletter', { csrf: 'CSRF token goes here' });
 });
+
+// const NewsletterSignup = () => { };
+
+// //NewsletterSignup.prototype.save = cb => cb();
+
+// const VALID_EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+
+// app.post('/newsletter', (req, res) => {
+//   const name = req.body.name || '';
+//   const email = req.body.email || '';
+//   // input validation
+//   if (!email.match(VALID_EMAIL_REGEX)) {
+//     if (req.xhr) return res.json({ error: 'Invalid name email address.' });
+//     req.session.flash = {
+//       type: 'danger',
+//       intro: 'Validation error!',
+//       message: 'The email address you entered was  not valid.',
+//     };
+//     return res.redirect(303, '/newsletter/archive');
+//   }
+//   new NewsletterSignup({ name: name, email: email }).save((err) => {
+//     if (err) {
+//       if (req.xhr) return res.json({ error: 'Database error.' });
+//       req.session.flash = {
+//         type: 'danger',
+//         intro: 'Database error!',
+//         message: 'There was a database error; please try again later.',
+//       };
+//       return res.redirect(303, '/newsletter/archive');
+//     }
+//     if (req.xhr) return res.json({ success: true });
+//     req.session.flash = {
+//       type: 'success',
+//       intro: 'Thank you!',
+//       message: 'You have now been signed up for the newsletter.',
+//     };
+//     return res.redirect(303, '/newsletter/archive');
+//   });
+// });
+
+// app.get('/newsletter/archive', (req, res) => {
+//   res.render('newsletter/archive');
+// });
 
 // app.post('/process', (req, res) => {
 //   console.log(`Form (from querysrting): ${req.query.form}`);
@@ -154,5 +221,5 @@ app.use((err, req, res) => {
 });
 
 app.listen(app.get('port'), () => {
-  console.log(`Express starting on http://localhost:${app.get('port')} press ctrl + C for Exit`);
+  console.log(`Express starting on  ${app.get('env')} http://localhost:${app.get('port')} press ctrl + C for Exit`);
 });
