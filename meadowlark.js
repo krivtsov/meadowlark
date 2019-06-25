@@ -1,19 +1,21 @@
+/* eslint-disable array-callback-return */
 /* eslint-disable no-use-before-define */
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable no-console */
 /* jshint esversion: 6 */
 const express = require('express');
 const formidable = require('formidable');
-const expressLogger = require('express-logger');
+// const expressLogger = require('express-logger');
 const morgan = require('morgan');
 const cluster = require('cluster');
 const domain = require('domain').create();
+const mongoose = require('mongoose');
 
 const app = express();
 
 const handlebars = require('express-handlebars').create({
   defaultLayout: 'main',
-  extname: 'hbs',
+  extname: 'handlebars',
   helpers: {
     section: (name, options) => {
       if (!this._sections) this._sections = {};
@@ -21,6 +23,75 @@ const handlebars = require('express-handlebars').create({
       return null;
     },
   },
+});
+
+const credentials = require('./credentials');
+const Vacation = require('./models/vacation.js');
+
+const opts = {
+  useNewUrlParser: true,
+  server: {
+    socketOptions: { keepAlive: 1 },
+  },
+};
+
+switch (app.get('env')) {
+  case 'development':
+    mongoose.connect(credentials.mongo.development.connectionString, opts);
+    break;
+  case 'production':
+    mongoose.connect(credentials.mongo.production.connectionString, opts);
+    break;
+  default:
+    throw new Error(`Error env = ${app.get('env')}`);
+}
+
+Vacation.find((err, vacations) => {
+  if (vacations.length) return;
+
+  new Vacation({
+    name: 'Hood River Day Trip',
+    slug: 'hood-river-day-trip',
+    category: 'Day Trip',
+    sku: 'HR199',
+    description: 'Spend a day sailing on the Columbia and enjoying craft beers in Hood River!',
+    priceInCents: 9995,
+    tags: ['day trip', 'hood river', 'sailing', 'windsurfing', 'breweries'],
+    inSeason: true,
+    maximumGuests: 16,
+    available: true,
+    packagesSold: 0,
+  }).save();
+
+  new Vacation({
+    name: 'Oregon Coast Getaway',
+    slug: 'oregon-coast-getaway',
+    category: 'Weekend Getaway',
+    sku: 'OC39',
+    description: 'Enjoy the ocean air and quaint coastal towns!',
+    priceInCents: 269995,
+    tags: ['weekend getaway', 'oregon coast', 'beachcombing'],
+    inSeason: false,
+    maximumGuests: 8,
+    available: true,
+    packagesSold: 0,
+  }).save();
+
+  new Vacation({
+    name: 'Rock Climbing in Bend',
+    slug: 'rock-climbing-in-bend',
+    category: 'Adventure',
+    sku: 'B99',
+    description: 'Experience the thrill of rock climbing in the high desert.',
+    priceInCents: 289995,
+    tags: ['weekend getaway', 'bend', 'high desert', 'rock climbing', 'hiking', 'skiing'],
+    inSeason: true,
+    requiresWaiver: true,
+    maximumGuests: 4,
+    available: false,
+    packagesSold: 0,
+    notes: 'The tour guide is currently recovering from a skiing accident.',
+  }).save();
 });
 
 app.use((req, res, next) => {
@@ -51,8 +122,6 @@ app.use((req, res, next) => {
   domain.add(res);
   domain.run(next);
 });
-
-const credentials = require('./credentials');
 
 app.use(require('cookie-parser')(credentials.cookieSecret));
 app.use(require('express-session')({
@@ -89,8 +158,8 @@ const getWeatherData = () => ({
 
 const fortune = require('./lib/fortune');
 
-app.engine('hbs', handlebars.engine);
-app.set('view engine', 'hbs');
+app.engine('handlebars', handlebars.engine);
+app.set('view engine', 'handlebars');
 
 app.set('port', process.env.PORT || 3000);
 
@@ -119,7 +188,7 @@ app.use((req, res, next) => {
 
 switch (app.get('env')) {
   case 'production':
-    app.use(expressLogger({ path: `${__dirname}/log/requets.log` }));
+    // app.use(expressLogger({ path: `${__dirname}/log/requets.log` }));
     break;
   default:
     app.use(morgan('dev'));
@@ -175,6 +244,53 @@ app.get('/jquerytest', (req, res) => {
 
 app.get('/newsletter', (req, res) => {
   res.render('newsletter', { csrf: 'CSRF token goes here' });
+});
+
+app.get('/vacations', (req, res) => {
+  Vacation.find({ available: true }, (err, vacations) => {
+    const context = {
+      // test: 'ererr',
+      vacations: vacations.map(vacation => ({
+        sku: vacation.sku,
+        name: vacation.name,
+        description: vacation.description,
+        price: vacation.getDisplayPrice(),
+        inSeason: vacation.inSeason,
+      })),
+    };
+    res.render('vacations', context);
+  });
+});
+
+const VacationInSeasonListener = require('./models/vacationInSeasonListener');
+
+app.get('/notify-me-when-in-season', (req, res) => {
+  res.render('notify-me-when-in-season', { sku: req.query.sku });
+});
+
+app.post('/notify-me-when-in-season', (req, res) => {
+  VacationInSeasonListener.update(
+    { email: req.body.email },
+    { $push: { skus: req.body.sku } },
+    { upset: true },
+    (err) => {
+      if (err) {
+        console.error(err.stack);
+        req.session.flash = {
+          type: 'danger',
+          intro: 'Uuups!',
+          message: 'an error occurred while processing your request',
+        };
+        return res.redirect(303, '/vacations');
+      }
+      req.session.flash = {
+        type: 'success',
+        intro: 'thanks',
+        message: 'you will be notified when the season comes for this tour',
+      };
+      return res.redirect(303, '/vacations');
+    },
+  );
 });
 
 // app.get('/fail', (req, res) => {
